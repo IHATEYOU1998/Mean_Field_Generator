@@ -34,7 +34,7 @@ void spec_info::read_file(){
         }
         parsedCsv_p.push_back(parsedRow_p);
     }
-      std::ifstream  data_n("SSN4.csv");
+    std::ifstream  data_n("SSN4.csv");
 // check if file opens
     if ( ! data_n.is_open() ) {                 
       cout <<" Failed to open" << endl;}     

@@ -17,20 +17,23 @@ int main(int argc, char** argv){
     std::cout << "Try find_mass /input/file /output/file\n";
     return -1;
   }
+
   
 //Get D and A trees. Open output file.
   TFile * input_file = new TFile(argv[1]);
   TFile * output_file = new TFile(argv[2],"RECREATE");
-    
+
+  
 //Make trees and histograms for the nuclei
   TTree * generator_tree = (TTree*)input_file->Get("genT");
-  TH2D * his_P1_Mtf = new TH2D("P1_VS_Mtf","P1_VS_Mtf;P1;Mtf;counts", 800, 0, 800, 800, 400, 1200); // bin #, min1, min2, max
+  TH2D * his_P1_Mtf = new TH2D("P1_VS_Mtf","P1_VS_Mtf;P1;Mtf;counts", 800, 0, 800, 800, 400, 6200); // bin #, min1, min2, max
   TH2D * his_P1_Mtf_mean = new TH2D("P1_VS_Mtf_mean","P1_VS_Mtf_mean;P1;Mtf;counts", 1000, 0, 1000, 1000, 0, 1000); // bin #, min1, min2, max
   TH2D * his_theta_P1prime_q = new TH2D("theta_VS_P1prime_q","theta_VS_P1prime_q;P1prime/q;theta;counts", 20, 0, 1.3, 30, 0, 1.5); // bin #, min1, min2, max
 
+  
 // Define Variables
-  double X_b, Q_2, q_vec[3], P1_prime[3], P1_prime_mag, q_mag, weight, P1;  // Define variables from generator.cpp
-  double M_n = 0.93827231;	                                // Mass of exiting proton; Gev
+  double X_b, Q_2, q_vec[3], P1_prime_vec[3], P1_prime_mag, q_mag, weight, P1_mag, w;  // Define variables from generator.cpp
+  double M_n = 0.93827231;	                                               // Mass of exiting proton (close to neutron); Gev
   
 // Get branch (values) from generator.cpp   
   generator_tree->SetBranchAddress("X_b",&X_b);
@@ -38,27 +41,31 @@ int main(int argc, char** argv){
   generator_tree->SetBranchAddress("P1_prime_mag",&P1_prime_mag);
   generator_tree->SetBranchAddress("q_mag",&q_mag);
   generator_tree->SetBranchAddress("weight",&weight);
-  generator_tree->SetBranchAddress("P1",&P1);
-  generator_tree->SetBranchAddress("P1_prime",P1_prime);
+  generator_tree->SetBranchAddress("P1_mag",&P1_mag);
+  generator_tree->SetBranchAddress("w",&w);
+  generator_tree->SetBranchAddress("P1_prime_vec",P1_prime_vec);
   generator_tree->SetBranchAddress("q_vec",q_vec);
 
+  
 // Loop over all entries
   for (int i = 0; i < generator_tree->GetEntries(); i++){
     generator_tree->GetEvent(i);
-    if (X_b < 1.) continue;
+    if (X_b < 1.3) continue;
     if ((P1_prime_mag/q_mag) > 0.96) continue;
     if ((P1_prime_mag/q_mag) < 0.62) continue;    
-    double q_dot_pprime = (P1_prime[0]*q_vec[0]+P1_prime[1]*q_vec[1]+P1_prime[2]*q_vec[2]);
+    double q_dot_pprime = (P1_prime_vec[0]*q_vec[0] + P1_prime_vec[1]*q_vec[1] + P1_prime_vec[2]*q_vec[2]);
     double cos_theta_P1_prime_q = (q_dot_pprime/(P1_prime_mag*q_mag)); // theta (angle) between P1_prime and q
     if (fabs(cos_theta_P1_prime_q) > 1) continue;
     double theta_P1_prime_q = acos(cos_theta_P1_prime_q);
     if (theta_P1_prime_q > 25.*(2.*M_PI/360.)) continue;
-    double w = Q_2 / (2 * M_n * X_b);	           // Energy transfered to nucleon from photon; Gev
     double E1_prime = sqrt(P1_prime_mag*P1_prime_mag + M_n*M_n);  // final Energy of ejected nucleon; Gev
-    double Mtf = sqrt(-Q_2 + 4*M_n*M_n - P1_prime_mag*P1_prime_mag + E1_prime*E1_prime + 4*M_n*(w - E1_prime) + 2*q_dot_pprime - 2*E1_prime*w);
-    his_P1_Mtf->Fill(P1*1000,Mtf*1000, weight);
+    double Mtf = sqrt(-q_mag*q_mag + w*w + 4*M_n*M_n - P1_prime_mag*P1_prime_mag + E1_prime*E1_prime + 4*M_n*(w - E1_prime) + 2*q_dot_pprime - 2*E1_prime*w);
+    double m_try = sqrt(-(-Q_2 + 2*M_n*w - 2*w*E1_prime - 2*q_dot_pprime + 5*M_n*M_n - 4*M_n*E1_prime));
+    //std::cout << m_try << "  " << Mtf << "\n";
+    his_P1_Mtf->Fill(P1_mag*1000,Mtf*1000, weight);
     his_theta_P1prime_q->Fill((P1_prime_mag/q_mag),theta_P1_prime_q, weight);
   }
+
   
 // Sum of squares (error)
   his_P1_Mtf->Sumw2();
