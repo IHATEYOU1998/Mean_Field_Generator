@@ -26,8 +26,8 @@ int main(int argc, char** argv){
   
 //Make trees and histograms for the nuclei
   TTree * generator_tree = (TTree*)input_file->Get("genT");
-  TH2D * his_P1_Mtf = new TH2D("P1_VS_Mtf","P1_VS_Mtf;P1;Mtf;counts", 800, 0, 800, 800, 400, 6200); // bin #, min1, min2, max
-  TH2D * his_P1_Mtf_mean = new TH2D("P1_VS_Mtf_mean","P1_VS_Mtf_mean;P1;Mtf;counts", 1000, 0, 1000, 1000, 0, 1000); // bin #, min1, min2, max
+  TH2D * his_P1_Mtf = new TH2D("P1_VS_Mtf","P1_VS_Mtf;P1;Mtf;counts", 3000, 0, 800, 3000, 0, 3500); // bin #, min1, min2, max
+  TH2D * his_P1_Mtf_mean = new TH2D("P1_VS_Mtf_mean","P1_VS_Mtf_mean;P1;Mtf;counts", 1000, 0, 800, 1000, 0, 3500); // bin #, min1, min2, max
   TH2D * his_theta_P1prime_q = new TH2D("theta_VS_P1prime_q","theta_VS_P1prime_q;P1prime/q;theta;counts", 20, 0, 1.3, 30, 0, 1.5); // bin #, min1, min2, max
 
   
@@ -48,7 +48,7 @@ int main(int argc, char** argv){
 
   
 // Loop over all entries
-  for (int i = 0; i < generator_tree->GetEntries(); i++){
+  for (int i = 0; i < generator_tree->GetEntries(); i++){   
     generator_tree->GetEvent(i);
     if (X_b < 1.3) continue;
     if ((P1_prime_mag/q_mag) > 0.96) continue;
@@ -57,14 +57,16 @@ int main(int argc, char** argv){
     double cos_theta_P1_prime_q = (q_dot_pprime/(P1_prime_mag*q_mag)); // theta (angle) between P1_prime and q
     if (fabs(cos_theta_P1_prime_q) > 1) continue;
     double theta_P1_prime_q = acos(cos_theta_P1_prime_q);
+    //theta_P1_prime_q = M_PI - theta_P1_prime_q;
     if (theta_P1_prime_q > 25.*(2.*M_PI/360.)) continue;
     double E1_prime = sqrt(P1_prime_mag*P1_prime_mag + M_n*M_n);  // final Energy of ejected nucleon; Gev
-    double Mtf = sqrt(-q_mag*q_mag + w*w + 4*M_n*M_n - P1_prime_mag*P1_prime_mag + E1_prime*E1_prime + 4*M_n*(w - E1_prime) + 2*q_dot_pprime - 2*E1_prime*w);
-    double m_try = sqrt(-(-Q_2 + 2*M_n*w - 2*w*E1_prime - 2*q_dot_pprime + 5*M_n*M_n - 4*M_n*E1_prime));
-    //std::cout << m_try << "  " << Mtf << "\n";
-    his_P1_Mtf->Fill(P1_mag*1000,Mtf*1000, weight);
-    his_theta_P1prime_q->Fill((P1_prime_mag/q_mag),theta_P1_prime_q, weight);
+    double Mtf = sqrt((Q_2 + 4*M_n*M_n - P1_prime_mag*P1_prime_mag + E1_prime*E1_prime + 4*M_n*(w - E1_prime) + 2*q_dot_pprime - 2*E1_prime*w));
+    if (Mtf < 0.) continue;
+    his_P1_Mtf->Fill(P1_mag*1000,Mtf*1000);
+    his_theta_P1prime_q->Fill((P1_prime_mag/q_mag),theta_P1_prime_q);
   }
+
+  his_P1_Mtf->Draw("colz");
 
   
 // Sum of squares (error)
@@ -72,33 +74,36 @@ int main(int argc, char** argv){
   his_theta_P1prime_q->Sumw2();
 
 // Find mean for every x point and replot
-  double epsilon = 50;
-  double init_point = 0;
-  double x[20];
-  double y[20];
-  double ex[20];
-  double ey[20];
+  double section_width = 40.;
+  double total_bins = 3000.;
+  double total_sections = 20.;
+  double x[(int) total_sections];
+  double y[(int) total_sections];
+  double ex[(int) total_sections];
+  double ey[(int) total_sections];
   
 
 
-for (int round = 0; round < 19; round++){ 
-  TH1D * proj_Mtf = his_P1_Mtf->ProjectionY(" ", init_point + epsilon*round, init_point + epsilon*(round+1.));
+for (int round = 0.; round < total_sections; round++){ 
+  TH1D * proj_Mtf = his_P1_Mtf->ProjectionY(":)", (total_bins/total_sections)*round, (total_bins/total_sections)*(round+1.));
   double Mtf_bin_mean = proj_Mtf->GetMean(); // find mean given in bin graph
   double Mtf_bin_std = proj_Mtf->GetStdDev();
-  //proj_Mtf->Fit("gaus");
-  x[round] = round*epsilon + 25;
+  x[round] = (round+0.5)*section_width;  
   y[round] = Mtf_bin_mean;
-  ex[round] = 0.01;
+  ex[round] = section_width/2.;
   ey[round] = Mtf_bin_std;
-  his_P1_Mtf_mean->Fill(round*epsilon+25,Mtf_bin_mean);
+  his_P1_Mtf_mean->Fill((round+0.5)*section_width,Mtf_bin_mean);
+  std::cout << Mtf_bin_std << "  " << Mtf_bin_mean << "\n";
+  proj_Mtf->Reset("ICESM");
  }
 
- TCanvas *c1 = new TCanvas("c1","A Simple Graph Example",900,900);
+
+ TCanvas *c2 = new TCanvas("c2","A Simple Graph Example",900.,900.);
 
   // TGraphErrors * error = new TGraphErrors(ADC_3_x.size(),&ADC_3_x[0],&ADC_3_y[0]);
 
   
-  TGraphErrors* Mtf_error = new TGraphErrors(20, x, y, ex, ey);
+  TGraphErrors* Mtf_error = new TGraphErrors(total_sections, x, y, ex, ey);
    Mtf_error->SetTitle("");      // graph title
    Mtf_error->SetLineColor(kBlue);                                
    Mtf_error->SetLineWidth(1);                                   
@@ -111,7 +116,7 @@ for (int round = 0; round < 19; round++){
    Mtf_error->GetXaxis()->SetTitle("P1");                     // X-axis title
    Mtf_error->GetXaxis()->CenterTitle(true);                     // Center on axis
    Mtf_error->SetMinimum(0);                                     // y-axis minimum
-   Mtf_error->SetMaximum(1100);                                  // y-axis maximum
+   Mtf_error->SetMaximum(3500);                                  // y-axis maximum
    Mtf_error->Draw("AP");                                        // Draw on canvas
    
 
@@ -122,7 +127,7 @@ for (int round = 0; round < 19; round++){
     his_P1_Mtf_mean->Write();
     his_theta_P1prime_q->Write();
     Mtf_error->Write();
-    // proj_Mtf->Write();
+    //proj_Mtf->Write();
     output_file->Close();
   
   return 0;
