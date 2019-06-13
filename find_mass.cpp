@@ -9,6 +9,7 @@
 #include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TCanvas.h"
+#include "TVector3.h"
 
 
 int main(int argc, char** argv){
@@ -26,14 +27,14 @@ int main(int argc, char** argv){
   
 //Make trees and histograms for the nuclei
   TTree * generator_tree = (TTree*)input_file->Get("genT");
-  TH2D * his_P1_Mtf = new TH2D("P1_VS_Mtf","P1_VS_Mtf;P1;Mtf;counts", 3000, 0, 800, 3000, 0, 3500); // bin #, min1, min2, max
-  TH2D * his_P1_Mtf_mean = new TH2D("P1_VS_Mtf_mean","P1_VS_Mtf_mean;P1;Mtf;counts", 1000, 0, 800, 1000, 0, 3500); // bin #, min1, min2, max
+  TH2D * his_P1_Mtf = new TH2D("P1_VS_Mtf","P1_VS_Mtf;P1;Mtf;counts", 3000, 0, 1500, 3000, 0, 3500); // bin #, min1, min2, max
+  TH2D * his_P1_Mtf_mean = new TH2D("P1_VS_Mtf_mean","P1_VS_Mtf_mean;P1;Mtf;counts", 1000, 0, 1500, 1000, 0, 3500); // bin #, min1, min2, max
   TH2D * his_theta_P1prime_q = new TH2D("theta_VS_P1prime_q","theta_VS_P1prime_q;P1prime/q;theta;counts", 20, 0, 1.3, 30, 0, 1.5); // bin #, min1, min2, max
 
   
 // Define Variables
   double X_b, Q_2, q_vec[3], P1_prime_vec[3], P1_prime_mag, q_mag, weight, P1_mag, w;  // Define variables from generator.cpp
-  double M_n = 0.93827231;	                                               // Mass of exiting proton (close to neutron); Gev
+  double M_n = 0.93827231;	                                                 // Mass of exiting proton (close to neutron); Gev
   
 // Get branch (values) from generator.cpp   
   generator_tree->SetBranchAddress("X_b",&X_b);
@@ -50,17 +51,17 @@ int main(int argc, char** argv){
 // Loop over all entries
   for (int i = 0; i < generator_tree->GetEntries(); i++){   
     generator_tree->GetEvent(i);
-    if (X_b < 1.3) continue;
+    if (X_b < 1.) continue;
     if ((P1_prime_mag/q_mag) > 0.96) continue;
-    if ((P1_prime_mag/q_mag) < 0.62) continue;    
-    double q_dot_pprime = (P1_prime_vec[0]*q_vec[0] + P1_prime_vec[1]*q_vec[1] + P1_prime_vec[2]*q_vec[2]);
-    double cos_theta_P1_prime_q = (q_dot_pprime/(P1_prime_mag*q_mag)); // theta (angle) between P1_prime and q
-    if (fabs(cos_theta_P1_prime_q) > 1) continue;
-    double theta_P1_prime_q = acos(cos_theta_P1_prime_q);
-    //theta_P1_prime_q = M_PI - theta_P1_prime_q;
-    if (theta_P1_prime_q > 25.*(2.*M_PI/360.)) continue;
+    if ((P1_prime_mag/q_mag) < 0.62) continue;
+    TVector3 P1_prime_TVec(P1_prime_vec[0], P1_prime_vec[1], P1_prime_vec[2]); //turn to TVector
+    TVector3 q_TVec(q_vec[0], q_vec[1], q_vec[2]); //turn to TVector    
+    Double_t theta_P1_prime_q = P1_prime_TVec.Angle(q_TVec);
+    double_t q_dot_pprime = P1_prime_TVec.Dot(q_TVec);   
+    //  std::cout << q_dot_pprime << "   real    " << b << "\n";
+    if (theta_P1_prime_q < 25.*(2.*M_PI/360.)) continue;
     double E1_prime = sqrt(P1_prime_mag*P1_prime_mag + M_n*M_n);  // final Energy of ejected nucleon; Gev
-    double Mtf = sqrt((Q_2 + 4*M_n*M_n - P1_prime_mag*P1_prime_mag + E1_prime*E1_prime + 4*M_n*(w - E1_prime) + 2*q_dot_pprime - 2*E1_prime*w));
+    double Mtf = sqrt((-Q_2 + 4*M_n*M_n - P1_prime_mag*P1_prime_mag + E1_prime*E1_prime + 4*M_n*(w - E1_prime) + 2*q_dot_pprime - 2*E1_prime*w));
     if (Mtf < 0.) continue;
     his_P1_Mtf->Fill(P1_mag*1000,Mtf*1000);
     his_theta_P1prime_q->Fill((P1_prime_mag/q_mag),theta_P1_prime_q);
@@ -93,7 +94,7 @@ for (int round = 0.; round < total_sections; round++){
   ex[round] = section_width/2.;
   ey[round] = Mtf_bin_std;
   his_P1_Mtf_mean->Fill((round+0.5)*section_width,Mtf_bin_mean);
-  std::cout << Mtf_bin_std << "  " << Mtf_bin_mean << "\n";
+  std::cout << "std:  " <<  Mtf_bin_std << "        mean:  " << Mtf_bin_mean << "\n";
   proj_Mtf->Reset("ICESM");
  }
 
