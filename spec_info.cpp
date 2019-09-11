@@ -1,6 +1,7 @@
 
 #include "spec_info.h"
 #include "TH2D.h"
+#include "TSpline.h"
 
 #include <fstream>
 #include <iostream>
@@ -67,10 +68,19 @@ double spec_info::spec_find(double k_test, double es_test, int code)
 {
 // If inputs are out of bounds, spec_fun = 0. Energy and momentum are in units inverse fermi
   if (es_test > 999.5 or es_test < 0.5){
+    std::cout << "no interpolate: es " << es_test << "\n";
     return 0;}
-  if (k_test > 9.975 or k_test < 0.025){
+  if (k_test > 9.975){
+    std::cout << "no interpolate: k " << k_test << "es " << es_test << "\n";
     return 0;}
+
   
+//Interpolate out of range for momentum < 0.025
+  if (k_test < 0.025 and code == 2112){
+    return neutron_spec->Interpolate(0.025, es_test) + (((neutron_spec->Interpolate(0.075, es_test)-neutron_spec->Interpolate(0.025, es_test))/0.05) * (k_test-0.025));}
+  if (k_test < 0.025 and code == 2212){
+    return neutron_spec->Interpolate(0.025, es_test) + (((neutron_spec->Interpolate(0.075, es_test)-neutron_spec->Interpolate(0.025, es_test))/0.05) * (k_test-0.025));}
+
 //Interpolate based on neutron vs proton
    if (code == 2112){
       return neutron_spec->Interpolate(k_test, es_test);}
@@ -81,11 +91,24 @@ double spec_info::spec_find(double k_test, double es_test, int code)
 double spec_info::spec_find_fake(double k_test, double es_test, int code)
 {
   double k_in_MeV = k_test * 197.3;
-  // Return prob(k_test) * Prob(es_test)
   double E_exponent = (es_test - 20. - k_in_MeV*k_in_MeV/(2*3.016*931.49))/0.3; // 0.3 MeV width
   double k_exponent = k_in_MeV/100.; // 100 MeV corresponds to kF approx 200
-
-  // std::cerr << k_exponent << " " << E_exponent << " " << exp(-0.5*(k_exponent * k_exponent + E_exponent*E_exponent)) << "\n";
   return exp(-0.5*(k_exponent * k_exponent + E_exponent*E_exponent));
 }
 
+
+// spline attempt:
+/**  if (k_test < 0.025 and code == 2112){
+    Double_t xn[4] = { 0.025, 0.075, 0.125, 0.175 };
+    Double_t yn[4] = { neutron_spec->Interpolate(.025, es_test),neutron_spec->Interpolate(.075, es_test),neutron_spec->Interpolate(.125, es_test),neutron_spec->Interpolate(.175, es_test) };
+    Double_t b1 = (yn[1]-yn[0])/0.05;
+    Double_t e1 = (yn[3]-yn[2])/0.05;
+    TSpline3 sp3("sp3", xn, yn, 4, "b1e1", b1, e1);
+    return sp3.Eval(k_test);}
+  if (k_test < 0.025 and code == 2212){
+    Double_t xn[4] = { 0.025, 0.075, 0.125, 0.175 };
+    Double_t yn[4] = { proton_spec->Interpolate(.025, es_test),proton_spec->Interpolate(.075, es_test),proton_spec->Interpolate(.125, es_test),proton_spec->Interpolate(.175, es_test) };
+    Double_t b1 = (yn[1]-yn[0])/0.05;
+    Double_t e1 = (yn[3]-yn[2])/0.05;
+    TSpline3 sp3("sp3", xn, yn, 4, "b1e1", b1, e1);
+    return sp3.Eval(k_test);}**/

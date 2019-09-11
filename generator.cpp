@@ -20,14 +20,14 @@
 // Randomly generated variabe's range (fully defined in code in comments)
   const double xb_max = 1.5;      // Maximum in X_b; unitless
   const double xb_min = 0.5;      // Minimum in X_b; unitless
-  const double Q2_max = 4;        // Maximum in Q^2; GeV^2
-  const double Q2_min = 1;        // Minimum in Q^2; Don't go too low (must be > 0.2 for sure); GeV^2
-  const double P1x_max = 0.4;     // Maximum of initial nucleon's x-momentum; GeV
-  const double P1x_min = -0.4;    // Minimum of initial nucleon's x-momentum; GeV
-  const double P1y_max = 0.4;     // Maximum of initial nucleon's y-momentum; GeV
-  const double P1y_min = -0.4;    // Minimum of initial nucleon's y-momentum; GeV
-  const double P1z_max = 0.4;     // Maximum of initial nucleon's z-momentum; GeV
-  const double P1z_min = -0.4;    // Minimum of initial nucleon's z-momentum; GeV
+  const double Q2_max = 10;        // Maximum in Q^2; GeV^2
+  const double Q2_min = 2.5;        // Minimum in Q^2; Don't go too low (must be > 0.2 for sure); GeV^2
+  const double P1x_max = 0.155;     // Maximum of initial nucleon's x-momentum; GeV
+  const double P1x_min = -0.155;    // Minimum of initial nucleon's x-momentum; GeV
+  const double P1y_max = 0.155;     // Maximum of initial nucleon's y-momentum; GeV
+  const double P1y_min = -0.155;    // Minimum of initial nucleon's y-momentum; GeV
+  const double P1z_max = 0.155;     // Maximum of initial nucleon's z-momentum; GeV
+  const double P1z_min = -0.155;    // Minimum of initial nucleon's z-momentum; GeV
   const double phi_max = 2*M_PI;  // Maximum in phi; radians
   const double phi_min = 0;       // Minimum in phi; radians
 
@@ -56,12 +56,16 @@ int main(int argc, char ** argv){
   bool isProton;                     // Define boolean of whether we have a proton or neutron
   double BE_A_1;                     // Binding energy of recoil nucleus
 
+// Define variables of incoming electron
+  double P_b = sqrt(P_b_x*P_b_x + P_b_y*P_b_y + P_b_z*P_b_z);  // Magnitude of incoming elecron momentum; Gev
+  double E_b = sqrt(P_b*P_b + M_e*M_e);                        // initial electron beam energy (about = P_z); Gev
+
   
 // TTree to save values during the loop
   TFile * outfile = new TFile(argv[3], "RECREATE");
   TTree * outtree = new TTree("genT", "Generator Tree");
   double weight, Q_2, X_b, E_miss, P1_prime_vec[3], w, nucleon_type, q_mag, q_vec[3], P1_mag, Phi_k;
-  double theta_k, theta_P1_prime, Phi_P1_prime, P_k_mag, P1_vec[3], P_k_vec[3], P1_prime_mag;
+  double theta_k, theta_P1_prime, Phi_P1_prime, P_k_mag, P1_vec[3], P_k_vec[3], P1_prime_mag, Mtf,theta_P1_prime_q;
   
 //Variables we are saving: "name", &variable, "name with elements"/double
   outtree->Branch("weight",&weight,"weight/D");                           // Weighed differential cross section; proton and neutron
@@ -85,6 +89,12 @@ int main(int argc, char ** argv){
   outtree->Branch("Phi_P1_prime",&Phi_P1_prime,"Phi_P1_prime/D");         // Angle of ejected nucleon; Spherical: X-Y plane
   outtree->Branch("theta_P1_prime",&theta_P1_prime,"theta_P1_prime/D");   // Angle of ejected nucleon; Spherical: to Z-axis
 
+  outtree->Branch("Mtf",&Mtf,"Mtf/D");   // Angle of ejected nucleon; Spherical: to Z-axis
+    outtree->Branch("theta_P1_prime_q",&theta_P1_prime_q,"theta_P1_prime_q/D");   // Angle of ejected nucleon; Spherical: to Z-axis
+
+
+
+  
   
 // Initialize classes
   spec_info Spec_func;                  // Access the spectral function interpolator spec_find from the spec_info class
@@ -96,7 +106,7 @@ int main(int argc, char ** argv){
 for (int event = 0 ; event < nEvents ; event++){
   
 // Reset tree variable to zero after every loop
-  weight = Q_2 = X_b = E_miss = nucleon_type = q_mag = w = 0;
+  weight = Q_2 = X_b = E_miss = nucleon_type = q_mag = w = Mtf = 0;
   P_k_mag = theta_k = Phi_k = 0;
   P1_mag = P1_prime_mag = theta_P1_prime = Phi_P1_prime = 0;
   memset(P1_prime_vec, 0, sizeof(P1_prime_vec));
@@ -131,17 +141,12 @@ for (int event = 0 ; event < nEvents ; event++){
     BE_A_1 = 0.007718058;}                // Binding energy of He-3; from kaeri; Gev
 
   
-// Define variables of incoming electron
-  double P_b = sqrt(P_b_x*P_b_x + P_b_y*P_b_y + P_b_z*P_b_z);  // Magnitude of incoming elecron momentum; Gev
-  double E_b = sqrt(P_b*P_b + M_e*M_e);                        // initial electron beam energy (about = P_z); Gev
-
-  
 // Define variables from electron scatter
   w = Q_2 / (2 * M_n * X_b);	                   // Energy transfered to nucleon from scatter event; Gev
-  if (w > E_b) continue;                           // discontinue if unphysical (more energy transfered than initially had)
+  if (M_e + w > E_b) continue;                           // discontinue if unphysical (more energy transfered than initially had)
   double E_k = E_b - w;	                           // Energy of scattered electron; Gev
   P_k_mag = sqrt(E_k*E_k - M_e*M_e);               // Momentum of scattered Electron; Gev
-  q_mag = sqrt(Q_2 + w*w);                         // Momentum transfered to nucleon from photon; Gev
+  q_mag = sqrt(Q_2 + w*w);                         // Momentum transfered to nucleon from photon; Gev  
   double cos_theta_k = (P_b*P_b + P_k_mag*P_k_mag - q_mag*q_mag)/(2*P_b*P_k_mag);  // cos(angle) of scattered electron with Z-axis
   if (fabs(cos_theta_k) > 1.) continue;            // discontinue if unphysical
   theta_k = acos(cos_theta_k);                     // angle of scattered electron with z axis
@@ -170,7 +175,7 @@ for (int event = 0 ; event < nEvents ; event++){
   E_miss = M_n - (E1_prime - w);                                // Missing excitation energy for spectral function; GeV
   if ((E_A_1*E_A_1 - P_A_1*P_A_1) < M_A_1*M_A_1) continue;      // Do not record unphysical event (need enough for rest mass)
 
-
+  
 // Defining scatter angles for nucelon and recoil nucleus
   theta_P1_prime = acos(P1_prime_vec[2]/P1_prime_mag);    // Scatter angle of ejected nucleon; Spherical: to Z-axis
   Phi_P1_prime = atan2(P1_prime_vec[1],P1_prime_vec[0]);  // Scatter angle of ejected nucleon; Spherical: X-Y plane (to x-axis)
@@ -180,6 +185,10 @@ for (int event = 0 ; event < nEvents ; event++){
   
 // Variables that require outside calculation
   TVector3 P_k_TVec(P_k_vec[0], P_k_vec[1], P_k_vec[2]);                         //turn to TVector
+
+
+  TVector3 q_TVec(q_vec[0], q_vec[1], q_vec[2]);                         //turn to TVector
+  
   TVector3 P1_prime_TVec(P1_prime_vec[0], P1_prime_vec[1], P1_prime_vec[2]);     //turn to TVector
   double sigma = Sig.sigma_eN(E_b, P_k_TVec, P1_prime_TVec, isProton);  // cross section sigma_eN from Andrew and Jackson: Takes in (double Ebeam, TVector3 P_k, TVector3 P1_prime, bool isProton) returns in cm^2
   double spec = (pow(0.197345,3))*(0.001)*Spec_func.spec_find((double)P1_mag/0.197345, (double)(E_miss)*1000., nucleon_type);  // Spectral function for (P_1,E*); Uses spec_find: P_1: inverse femtometers, E*: MeV; Final unit in 1/(geV^4);
@@ -193,9 +202,11 @@ for (int event = 0 ; event < nEvents ; event++){
 // Divide Differential Cross Section by associated weighting
   weight = diff_cross/normalize_range;  // Weighted Differential Cross Section;
 
+  theta_P1_prime_q = P1_prime_TVec.Angle(q_TVec);                   //give angle between vectors, Radians
+  Mtf = sqrt(abs((-Q_2 + 4*M_n*M_n + E1_prime*E1_prime - P1_prime_mag*P1_prime_mag + 4*M_n*(w - E1_prime) - 2*E1_prime*w + 2*P1_prime_TVec.Dot(q_TVec))));
 		
 // Only record physical values
-  if (weight > 0){   
+  if (weight > 0){
     outtree->Fill();}  
   }
 
