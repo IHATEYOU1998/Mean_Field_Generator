@@ -8,12 +8,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(ROOT REQUIRED)
 
 # Project name
-project (MFG-Project)
+project (Mean_Project)
 
 set(INCLUDES ${ROOT_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
 include_directories(${INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
-# Add executable for generating pseudo data
+# Add executable for generator
 add_executable(gen_root generator.cpp spec_info.cpp Cross_Sections.cpp helpers.cpp)
 target_link_libraries(gen_root ${ROOT_LIBRARIES})
 
@@ -21,5 +21,7 @@ target_link_libraries(gen_root ${ROOT_LIBRARIES})
 add_executable(his_yay read_his.cpp)
 target_link_libraries(his_yay ${ROOT_LIBRARIES})
 
+#find mass
 add_executable(find_mass find_mass.cpp)
 target_link_libraries(find_mass ${ROOT_LIBRARIES})
+

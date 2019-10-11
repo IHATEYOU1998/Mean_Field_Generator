@@ -9,7 +9,6 @@
 #include "spec_info.h"
 #include "Cross_Sections.h"
 
-
 // Physical Constants
   const double M_e = 0.0005109906;                 // Mass of electron; GeV
   const double M_A = 4.0026032 * 0.93149 - M_e*2;  // Mass of initial nucleus; Helium-4  Gev
@@ -20,8 +19,8 @@
 // Randomly generated variabe's range (fully defined in code in comments)
   const double xb_max = 1.5;      // Maximum in X_b; unitless
   const double xb_min = 0.5;      // Minimum in X_b; unitless
-  const double Q2_max = 10;        // Maximum in Q^2; GeV^2
-  const double Q2_min = 2.5;        // Minimum in Q^2; Don't go too low (must be > 0.2 for sure); GeV^2
+  const double Q2_max = 3.;        // Maximum in Q^2; GeV^2
+  const double Q2_min = 1.5;        // Minimum in Q^2; Don't go too low (must be > 0.2 for sure); GeV^2
   const double P1x_max = 0.155;     // Maximum of initial nucleon's x-momentum; GeV
   const double P1x_min = -0.155;    // Minimum of initial nucleon's x-momentum; GeV
   const double P1y_max = 0.155;     // Maximum of initial nucleon's y-momentum; GeV
@@ -64,7 +63,8 @@ int main(int argc, char ** argv){
 // TTree to save values during the loop
   TFile * outfile = new TFile(argv[3], "RECREATE");
   TTree * outtree = new TTree("genT", "Generator Tree");
-  double weight, Q_2, X_b, E_miss, P1_prime_vec[3], w, nucleon_type, q_mag, q_vec[3], P1_mag, Phi_k;
+  int nucleon_type;
+  double weight, Q_2, X_b, E_miss, P1_prime_vec[3], w, q_mag, q_vec[3], P1_mag, Phi_k;
   double theta_k, theta_P1_prime, Phi_P1_prime, P_k_mag, P1_vec[3], P_k_vec[3], P1_prime_mag, Mtf,theta_P1_prime_q;
   
 //Variables we are saving: "name", &variable, "name with elements"/double
@@ -90,7 +90,7 @@ int main(int argc, char ** argv){
   outtree->Branch("theta_P1_prime",&theta_P1_prime,"theta_P1_prime/D");   // Angle of ejected nucleon; Spherical: to Z-axis
 
   outtree->Branch("Mtf",&Mtf,"Mtf/D");   // Angle of ejected nucleon; Spherical: to Z-axis
-    outtree->Branch("theta_P1_prime_q",&theta_P1_prime_q,"theta_P1_prime_q/D");   // Angle of ejected nucleon; Spherical: to Z-axis
+  outtree->Branch("theta_P1_prime_q",&theta_P1_prime_q,"theta_P1_prime_q/D");   // Angle of ejected nucleon; Spherical: to Z-axis
 
 
 
@@ -143,7 +143,7 @@ for (int event = 0 ; event < nEvents ; event++){
   
 // Define variables from electron scatter
   w = Q_2 / (2 * M_n * X_b);	                   // Energy transfered to nucleon from scatter event; Gev
-  if (M_e + w > E_b) continue;                           // discontinue if unphysical (more energy transfered than initially had)
+  if (M_e + w > E_b) continue;                     // discontinue if unphysical (more energy transfered than initially had)
   double E_k = E_b - w;	                           // Energy of scattered electron; Gev
   P_k_mag = sqrt(E_k*E_k - M_e*M_e);               // Momentum of scattered Electron; Gev
   q_mag = sqrt(Q_2 + w*w);                         // Momentum transfered to nucleon from photon; Gev  
