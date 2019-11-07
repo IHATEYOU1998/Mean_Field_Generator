@@ -118,6 +118,7 @@ for (int round = 0.; round < total_sections; round++){
  }
 his_P1_Mtf_mean->Sumw2();
 his_P1_Mtf_mean->Draw();
+his_P1_Mtf_mean->SetMarkerSize(1);
 
  
 // Error Bar Graph of Mtf Mean

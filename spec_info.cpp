@@ -68,10 +68,10 @@ double spec_info::spec_find(double k_test, double es_test, int code)
 {
 // If inputs are out of bounds, spec_fun = 0. Energy and momentum are in units inverse fermi
   if (es_test > 999.5 or es_test < 0.5){
-    std::cout << "no interpolate: es " << es_test << "\n";
+    std::cout << "no spec interpolate: energy (es) " << es_test << "\n";
     return 0;}
   if (k_test > 9.975){
-    std::cout << "no interpolate: k " << k_test << "es " << es_test << "\n";
+    std::cout << "no spec interpolate: momentum (k) " << k_test << "\n";
     return 0;}
 
   
@@ -88,6 +88,14 @@ double spec_info::spec_find(double k_test, double es_test, int code)
       return proton_spec->Interpolate(k_test, es_test);}
 }
 
+
+
+
+
+// Useful Additions:
+
+/**
+// Fake Spectral Function:
 double spec_info::spec_find_fake(double k_test, double es_test, int code)
 {
   double k_in_MeV = k_test * 197.3;
@@ -95,7 +103,7 @@ double spec_info::spec_find_fake(double k_test, double es_test, int code)
   double k_exponent = k_in_MeV/100.; // 100 MeV corresponds to kF approx 200
   return exp(-0.5*(k_exponent * k_exponent + E_exponent*E_exponent));
 }
-
+**/
 
 // spline attempt:
 /**  if (k_test < 0.025 and code == 2112){
