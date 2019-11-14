@@ -9,6 +9,8 @@
 #include "spectral_interpolation.h"
 #include "Cross_Sections.h"
 
+// NOTE: Place CSV files in Build Directory (SSP4, SSN4)
+
 // Physical Constants
   const double M_e = 0.0005109906;                 // Mass of electron; GeV
   const double M_A = 4.0026032 * 0.93149 - M_e*2;  // Mass of initial nucleus; Helium-4  Gev
