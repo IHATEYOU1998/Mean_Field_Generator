@@ -1,15 +1,7 @@
 
-#include "spec_info.h"
-#include "TH2D.h"
-#include "TSpline.h"
-
-#include <fstream>
-#include <iostream>
-#include <stdio.h>
-#include <cmath>
-using namespace std;
-
+#include "spectral_interpolation.h"
 // k = momentum; es = energy (for the corresponding spectral value you want to generate)
+
 
 spec_info::spec_info(){read_file();}
 spec_info::~spec_info(){}
@@ -87,6 +79,8 @@ double spec_info::spec_find(double k_test, double es_test, int code)
    if (code == 2212) {
       return proton_spec->Interpolate(k_test, es_test);}
 }
+
+
 
 
 

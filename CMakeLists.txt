@@ -14,14 +14,10 @@ set(INCLUDES ${ROOT_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
 include_directories(${INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 # Add executable for generator
-add_executable(gen_root generator.cpp spec_info.cpp Cross_Sections.cpp helpers.cpp)
+add_executable(gen_root MF_generator.cpp spectral_interpolation.cpp Cross_Sections.cpp helpers.cpp)
 target_link_libraries(gen_root ${ROOT_LIBRARIES})
 
 # make his
-add_executable(his_yay read_his.cpp)
+add_executable(his_yay histograms.cpp)
 target_link_libraries(his_yay ${ROOT_LIBRARIES})
-
-#find mass
-add_executable(find_mass find_mass.cpp)
-target_link_libraries(find_mass ${ROOT_LIBRARIES})
 

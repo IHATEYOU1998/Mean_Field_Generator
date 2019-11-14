@@ -1,5 +1,5 @@
-#ifndef __SPEC_INFO_H__
-#define __SPEC_INFO_H__
+#ifndef __SPECTRAL_INTERPOLATION_H__
+#define __SPECTRAL_INTERPOLATION_H__
 
 #include <iostream>
 #include <fstream>
@@ -13,8 +13,6 @@
 using namespace std;
 
 
-#include "find_close.h"
-#include "echelon.h"
 #include "TH2D.h"
 
 class spec_info{

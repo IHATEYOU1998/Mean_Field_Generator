@@ -6,7 +6,7 @@
 #include "TTree.h"
 #include "TRandom3.h"
 
-#include "spec_info.h"
+#include "spectral_interpolation.h"
 #include "Cross_Sections.h"
 
 // Physical Constants
